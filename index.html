@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAPA Data Classification Engine</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>KAPA Data Classification Engine</h1>
+            <p>Analyze, discover, train, predict and export classification models</p>
+        </header>
+
+        <main>
+            <!-- Step 1: Upload Training Data -->
+            <section id="step1" class="step active">
+                <h2>Step 1: Upload Training Data</h2>
+                <div class="upload-area">
+                    <input type="file" id="trainingFile" accept=".csv" />
+                    <label for="trainingFile" class="upload-label">
+                        <span>Choose CSV file or drag here</span>
+                    </label>
+                </div>
+                <div id="trainingPreview" class="preview hidden"></div>
+                <button id="nextToColumnSelect" class="btn btn-primary hidden">Next: Select Columns</button>
+            </section>
+
+            <!-- Step 2: Select Result Column -->
+            <section id="step2" class="step hidden">
+                <h2>Step 2: Select Result Column</h2>
+                <div id="columnSelection"></div>
+                <button id="loadConfig" class="btn btn-secondary hidden">Load Saved Configuration</button>
+                <button id="nextToColumnTypes" class="btn btn-primary hidden">Next: Define Column Types</button>
+            </section>
+
+            <!-- Step 3: Define Column Types -->
+            <section id="step3" class="step hidden">
+                <h2>Step 3: Define Column Types</h2>
+                <div id="columnTypes"></div>
+                <button id="nextToMapping" class="btn btn-primary hidden">Next: Define Mappings</button>
+            </section>
+
+            <!-- Step 4: Define Cell Mapping -->
+            <section id="step4" class="step hidden">
+                <h2>Step 4: Define Cell Mapping</h2>
+                <div id="mappingForm"></div>
+                <div style="margin-top: 20px;">
+                    <button id="saveConfig" class="btn btn-secondary">Save Configuration</button>
+                    <button id="trainModels" class="btn btn-primary">Train Models</button>
+                </div>
+            </section>
+
+            <!-- Step 5: Training Results -->
+            <section id="step5" class="step hidden">
+                <h2>Step 5: Training Results</h2>
+                <div id="trainingResults"></div>
+                <button id="nextToPredict" class="btn btn-primary">Next: Make Predictions</button>
+            </section>
+
+            <!-- Step 6: Upload Test Data & Predict -->
+            <section id="step6" class="step hidden">
+                <h2>Step 6: Upload Test Data & Predict</h2>
+                <div class="upload-area">
+                    <input type="file" id="testFile" accept=".csv" />
+                    <label for="testFile" class="upload-label">
+                        <span>Choose test CSV file</span>
+                    </label>
+                </div>
+                <div id="testPreview" class="preview hidden"></div>
+                <button id="makePredictions" class="btn btn-primary hidden">Make Predictions</button>
+                <div id="predictionResults" class="hidden"></div>
+            </section>
+        </main>
+
+        <footer>
+            <button id="clearCache" class="btn btn-secondary">Clear Training Data & Models</button>
+            <button id="downloadSampleData" class="btn btn-secondary">📥 Download Sample Data</button>
+            <p class="footer-text">All data processing happens in your browser. Nothing is sent to any server.</p>
+            <p class="footer-text">Owner: piotrpeciak@o2.pl | All rights reserved</p>
+        </footer>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="js/storage.js?v=2"></script>
+    <script src="js/csvParser.js?v=2"></script>
+    <script src="js/dataClean.js?v=2"></script>
+    <script src="js/dataEncode.js?v=2"></script>
+    <script src="js/linearRegression.js?v=2"></script>
+    <script src="js/optimizationEngine.js?v=2"></script>
+    <script src="js/modelTrain.js?v=2"></script>
+    <script src="js/modelPredict.js?v=2"></script>
+    <script src="js/results.js?v=2"></script>
+    <script src="js/cellMapping.js?v=2"></script>
+    <script src="js/app.js?v=2"></script>
+</body>
+</html>
