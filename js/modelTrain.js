@@ -59,7 +59,15 @@ const ModelTrainer = {
             experimentalResults.model2.name = 'Linear Regression with Interactions (Experimental)';
             experimentalResults.model3.name = 'Polynomial Regression (degree 3) (Experimental)';
             
-            // Return both sets of models
+            // Finally, train penalty-based models
+            console.log('\n⚖️ Training penalty-based models...');
+            const penaltyResults = this.trainWithPenalty(data, cellMapping, featureColumns, resultColumn, featureWeights, explorationExponents);
+            
+            penaltyResults.model1.name = 'Simple Linear Regression (Penalty)';
+            penaltyResults.model2.name = 'Linear Regression with Interactions (Penalty)';
+            penaltyResults.model3.name = 'Polynomial Regression (degree 3) (Penalty)';
+            
+            // Return all three sets of models
             return {
                 model1: standardModel1,
                 model2: standardModel2,
@@ -67,12 +75,17 @@ const ModelTrainer = {
                 model4: experimentalResults.model1,
                 model5: experimentalResults.model2,
                 model6: experimentalResults.model3,
+                model7: penaltyResults.model1,
+                model8: penaltyResults.model2,
+                model9: penaltyResults.model3,
                 uniqueValues,
                 featureColumns,
                 resultColumn,
                 useFeatureWeighting: true,
                 explorationExponents: experimentalResults.explorationExponents,
-                allModels: experimentalResults.allModels
+                allModels: experimentalResults.allModels,
+                penaltyExplorationExponents: penaltyResults.explorationExponents,
+                penaltyAllModels: penaltyResults.allModels
             };
         }
         
@@ -91,6 +104,11 @@ const ModelTrainer = {
         console.log('Training Model 3: Polynomial LR...');
         const model3 = this.trainPolynomial(X, y, uniqueValues, data, resultColumn, cellMapping, featureColumns, null);
         
+        console.log(`\nStandard Models Results:`);
+        console.log(`Model 1: accuracy=${model1.accuracy.toFixed(2)}%, weighted=${model1.weightedAccuracy.toFixed(2)}%`);
+        console.log(`Model 2: accuracy=${model2.accuracy.toFixed(2)}%, weighted=${model2.weightedAccuracy.toFixed(2)}%`);
+        console.log(`Model 3: accuracy=${model3.accuracy.toFixed(2)}%, weighted=${model3.weightedAccuracy.toFixed(2)}%`);
+        
         return {
             model1,
             model2,
@@ -99,6 +117,127 @@ const ModelTrainer = {
             featureColumns,
             resultColumn,
             useFeatureWeighting: false
+        };
+    },
+    
+    // Train with penalty-based approach
+    trainWithPenalty(data, cellMapping, featureColumns, resultColumn, userWeights, explorationExponents) {
+        console.log('\n⚖️ Testing penalty-based approach with', explorationExponents.length, 'exploration exponents...\n');
+        
+        // Calculate penalties: penalty = 2.0 - user_weight
+        const penalties = userWeights.map(userWeight => 2.0 - userWeight);
+        console.log('User weights:', userWeights.map(w => w.toFixed(2)));
+        console.log('Calculated penalties (2.0 - weight):', penalties.map(p => p.toFixed(2)));
+        
+        const allModels = [];
+        
+        // Test each exploration exponent to control penalty strength
+        explorationExponents.forEach((exploreExp, idx) => {
+            console.log(`\n--- Testing penalty strength ${idx + 1}/${explorationExponents.length}: ${exploreExp} ---`);
+            
+            // Apply penalty with exploration exponent controlling the strength
+            // Formula: reduced_value = 1.0 + (normalized_value - 1.0) * (1.0 - penalty * explore_exp)
+            
+            // Encode/normalize the raw data (0.2-2.0 range)
+            const { encoded, y } = DataEncoder.encodeData(data, cellMapping, featureColumns, resultColumn);
+            
+            // Apply penalty reduction: reduce column importance by penalty
+            const penaltyReduced = encoded.map(row => {
+                const transformed = { ...row };
+                featureColumns.forEach((col, i) => {
+                    const normalizedValue = row[col];
+                    if (!isNaN(normalizedValue)) {
+                        // Reduce importance: bring value closer to 1.0 based on penalty and exploration exponent
+                        const deviation = normalizedValue - 1.0;
+                        const penaltyStrength = penalties[i] * exploreExp;
+                        const reductionFactor = Math.max(0, 1.0 - penaltyStrength);
+                        transformed[col] = 1.0 + (deviation * reductionFactor);
+                    }
+                });
+                return transformed;
+            });
+            
+            const X_features = penaltyReduced.map(row => featureColumns.map(col => row[col]));
+            const X = X_features.map(row => [1, ...row]);
+            const uniqueValues = DataEncoder.getUniqueValues(cellMapping, featureColumns);
+            
+            // Train all 3 models with penalty-reduced features
+            const model1 = this.trainSimple(X, y, uniqueValues, data, resultColumn, cellMapping, featureColumns, null, exploreExp);
+            const model2 = this.trainInteractions(X, y, uniqueValues, data, resultColumn, cellMapping, featureColumns, null, exploreExp);
+            const model3 = this.trainPolynomial(X, y, uniqueValues, data, resultColumn, cellMapping, featureColumns, null, exploreExp);
+            
+            // Add penalty info to models
+            model1.explorationExponent = exploreExp;
+            model1.userWeights = userWeights;
+            model1.penalties = penalties;
+            model1.penaltyStrengths = penalties.map(p => p * exploreExp);
+            model1.name = `Model 1 (penalty exp=${exploreExp})`;
+            
+            model2.explorationExponent = exploreExp;
+            model2.userWeights = userWeights;
+            model2.penalties = penalties;
+            model2.penaltyStrengths = penalties.map(p => p * exploreExp);
+            model2.name = `Model 2 (penalty exp=${exploreExp})`;
+            
+            model3.explorationExponent = exploreExp;
+            model3.userWeights = userWeights;
+            model3.penalties = penalties;
+            model3.penaltyStrengths = penalties.map(p => p * exploreExp);
+            model3.name = `Model 3 (penalty exp=${exploreExp})`;
+            
+            console.log(`  Model 1: accuracy=${model1.accuracy.toFixed(2)}%, weighted=${model1.weightedAccuracy.toFixed(2)}%`);
+            console.log(`  Model 2: accuracy=${model2.accuracy.toFixed(2)}%, weighted=${model2.weightedAccuracy.toFixed(2)}%`);
+            console.log(`  Model 3: accuracy=${model3.accuracy.toFixed(2)}%, weighted=${model3.weightedAccuracy.toFixed(2)}%`);
+            
+            allModels.push({ model1, model2, model3, exploreExp });
+        });
+        
+        // Find best models: prioritize simple accuracy, use weighted score as tiebreaker (LOWER is better), then prefer exponent closer to 1.0
+        console.log('\n🏆 Selecting best penalty-based models (simple accuracy first, weighted score as tiebreaker, then closest to exp=1.0)...');
+        const bestModel1 = allModels.reduce((best, curr) => {
+            // Primary: higher simple accuracy wins
+            if (curr.model1.accuracy > best.model1.accuracy) return curr;
+            if (curr.model1.accuracy < best.model1.accuracy) return best;
+            // Tiebreaker 1: LOWER weighted score wins
+            if (Math.abs(curr.model1.weightedAccuracy - best.model1.weightedAccuracy) > 0.0001) {
+                return curr.model1.weightedAccuracy < best.model1.weightedAccuracy ? curr : best;
+            }
+            // Tiebreaker 2: Exploration exponent closer to 1.0 wins (simpler transformation)
+            return Math.abs(curr.exploreExp - 1.0) < Math.abs(best.exploreExp - 1.0) ? curr : best;
+        });
+        const bestModel2 = allModels.reduce((best, curr) => {
+            if (curr.model2.accuracy > best.model2.accuracy) return curr;
+            if (curr.model2.accuracy < best.model2.accuracy) return best;
+            if (Math.abs(curr.model2.weightedAccuracy - best.model2.weightedAccuracy) > 0.0001) {
+                return curr.model2.weightedAccuracy < best.model2.weightedAccuracy ? curr : best;
+            }
+            return Math.abs(curr.exploreExp - 1.0) < Math.abs(best.exploreExp - 1.0) ? curr : best;
+        });
+        const bestModel3 = allModels.reduce((best, curr) => {
+            if (curr.model3.accuracy > best.model3.accuracy) return curr;
+            if (curr.model3.accuracy < best.model3.accuracy) return best;
+            if (Math.abs(curr.model3.weightedAccuracy - best.model3.weightedAccuracy) > 0.0001) {
+                return curr.model3.weightedAccuracy < best.model3.weightedAccuracy ? curr : best;
+            }
+            return Math.abs(curr.exploreExp - 1.0) < Math.abs(best.exploreExp - 1.0) ? curr : best;
+        });
+        
+        console.log(`\nBest Model 1: exp=${bestModel1.exploreExp} (accuracy: ${bestModel1.model1.accuracy.toFixed(2)}%, weighted: ${bestModel1.model1.weightedAccuracy.toFixed(4)})`);
+        console.log(`\nBest Model 2: exp=${bestModel2.exploreExp} (accuracy: ${bestModel2.model2.accuracy.toFixed(2)}%, weighted: ${bestModel2.model2.weightedAccuracy.toFixed(4)})`);
+        console.log(`Best Model 3: exp=${bestModel3.exploreExp} (accuracy: ${bestModel3.model3.accuracy.toFixed(2)}%, weighted: ${bestModel3.model3.weightedAccuracy.toFixed(4)})`);
+        
+        const uniqueValues = DataEncoder.getUniqueValues(cellMapping, featureColumns);
+        
+        return {
+            model1: bestModel1.model1,
+            model2: bestModel2.model2,
+            model3: bestModel3.model3,
+            uniqueValues,
+            featureColumns,
+            resultColumn,
+            useFeatureWeighting: true,
+            explorationExponents,
+            allModels
         };
     },
     
@@ -138,9 +277,9 @@ const ModelTrainer = {
             const uniqueValues = DataEncoder.getUniqueValues(cellMapping, featureColumns);
             
             // Train all 3 models with this exploration exponent
-            const model1 = this.trainSimple(X, y, uniqueValues, data, resultColumn, cellMapping, featureColumns, null);
-            const model2 = this.trainInteractions(X, y, uniqueValues, data, resultColumn, cellMapping, featureColumns, null);
-            const model3 = this.trainPolynomial(X, y, uniqueValues, data, resultColumn, cellMapping, featureColumns, null);
+            const model1 = this.trainSimple(X, y, uniqueValues, data, resultColumn, cellMapping, featureColumns, null, exploreExp);
+            const model2 = this.trainInteractions(X, y, uniqueValues, data, resultColumn, cellMapping, featureColumns, null, exploreExp);
+            const model3 = this.trainPolynomial(X, y, uniqueValues, data, resultColumn, cellMapping, featureColumns, null, exploreExp);
             
             // Add exploration info to models
             model1.explorationExponent = exploreExp;
@@ -155,28 +294,46 @@ const ModelTrainer = {
             model3.combinedExponents = combinedExponents;
             model3.name = `Model 3 (exp=${exploreExp})`;
             
-            console.log(`  Model 1: ${model1.accuracy.toFixed(2)}%`);
-            console.log(`  Model 2: ${model2.accuracy.toFixed(2)}%`);
-            console.log(`  Model 3: ${model3.accuracy.toFixed(2)}%`);
+            console.log(`  Model 1: accuracy=${model1.accuracy.toFixed(2)}%, weighted=${model1.weightedAccuracy.toFixed(2)}%`);
+            console.log(`  Model 2: accuracy=${model2.accuracy.toFixed(2)}%, weighted=${model2.weightedAccuracy.toFixed(2)}%`);
+            console.log(`  Model 3: accuracy=${model3.accuracy.toFixed(2)}%, weighted=${model3.weightedAccuracy.toFixed(2)}%`);
             
             allModels.push({ model1, model2, model3, exploreExp });
         });
         
-        // Find best models
-        console.log('\n🏆 Selecting best models...');
-        const bestModel1 = allModels.reduce((best, curr) => 
-            curr.model1.accuracy > best.model1.accuracy ? curr : best
-        );
-        const bestModel2 = allModels.reduce((best, curr) => 
-            curr.model2.accuracy > best.model2.accuracy ? curr : best
-        );
-        const bestModel3 = allModels.reduce((best, curr) => 
-            curr.model3.accuracy > best.model3.accuracy ? curr : best
-        );
+        // Find best models: prioritize simple accuracy, use weighted score as tiebreaker (LOWER is better), then prefer exponent closer to 1.0
+        console.log('\n🏆 Selecting best models (simple accuracy first, weighted score as tiebreaker, then closest to exp=1.0)...');
+        const bestModel1 = allModels.reduce((best, curr) => {
+            // Primary: higher simple accuracy wins
+            if (curr.model1.accuracy > best.model1.accuracy) return curr;
+            if (curr.model1.accuracy < best.model1.accuracy) return best;
+            // Tiebreaker 1: LOWER weighted score wins (closer to thresholds)
+            if (Math.abs(curr.model1.weightedAccuracy - best.model1.weightedAccuracy) > 0.0001) {
+                return curr.model1.weightedAccuracy < best.model1.weightedAccuracy ? curr : best;
+            }
+            // Tiebreaker 2: Exploration exponent closer to 1.0 wins (simpler transformation)
+            return Math.abs(curr.exploreExp - 1.0) < Math.abs(best.exploreExp - 1.0) ? curr : best;
+        });
+        const bestModel2 = allModels.reduce((best, curr) => {
+            if (curr.model2.accuracy > best.model2.accuracy) return curr;
+            if (curr.model2.accuracy < best.model2.accuracy) return best;
+            if (Math.abs(curr.model2.weightedAccuracy - best.model2.weightedAccuracy) > 0.0001) {
+                return curr.model2.weightedAccuracy < best.model2.weightedAccuracy ? curr : best;
+            }
+            return Math.abs(curr.exploreExp - 1.0) < Math.abs(best.exploreExp - 1.0) ? curr : best;
+        });
+        const bestModel3 = allModels.reduce((best, curr) => {
+            if (curr.model3.accuracy > best.model3.accuracy) return curr;
+            if (curr.model3.accuracy < best.model3.accuracy) return best;
+            if (Math.abs(curr.model3.weightedAccuracy - best.model3.weightedAccuracy) > 0.0001) {
+                return curr.model3.weightedAccuracy < best.model3.weightedAccuracy ? curr : best;
+            }
+            return Math.abs(curr.exploreExp - 1.0) < Math.abs(best.exploreExp - 1.0) ? curr : best;
+        });
         
-        console.log(`\nBest Model 1: exp=${bestModel1.exploreExp} (${bestModel1.model1.accuracy.toFixed(2)}%)`);
-        console.log(`Best Model 2: exp=${bestModel2.exploreExp} (${bestModel2.model2.accuracy.toFixed(2)}%)`);
-        console.log(`Best Model 3: exp=${bestModel3.exploreExp} (${bestModel3.model3.accuracy.toFixed(2)}%)`);
+        console.log(`\nBest Model 1: exp=${bestModel1.exploreExp} (accuracy: ${bestModel1.model1.accuracy.toFixed(2)}%, weighted: ${bestModel1.model1.weightedAccuracy.toFixed(4)})`);
+        console.log(`Best Model 2: exp=${bestModel2.exploreExp} (accuracy: ${bestModel2.model2.accuracy.toFixed(2)}%, weighted: ${bestModel2.model2.weightedAccuracy.toFixed(4)})`);
+        console.log(`Best Model 3: exp=${bestModel3.exploreExp} (accuracy: ${bestModel3.model3.accuracy.toFixed(2)}%, weighted: ${bestModel3.model3.weightedAccuracy.toFixed(4)})`);
         
         const uniqueValues = DataEncoder.getUniqueValues(cellMapping, featureColumns);
         
@@ -208,12 +365,13 @@ const ModelTrainer = {
     },
 
     // Train Model 1: Simple Linear Regression
-    trainSimple(X, y, uniqueValues, originalData, resultColumn, cellMapping, featureColumns, featureWeights = null) {
+    trainSimple(X, y, uniqueValues, originalData, resultColumn, cellMapping, featureColumns, featureWeights = null, normalizationFactor = null) {
         const w = LinearRegression.calculateWeights(X, y, 0, featureWeights);
         const predictions = LinearRegression.predict(X, w);
         const predictionsRounded = LinearRegression.roundPredictions(predictions, uniqueValues);
         
         const accuracy = LinearRegression.calculateAccuracy(y, predictionsRounded);
+        const weightedAccuracy = LinearRegression.calculateWeightedAccuracy(y, predictionsRounded, predictions, uniqueValues, normalizationFactor);
         const confusion = LinearRegression.buildConfusionMatrix(y, predictionsRounded, uniqueValues);
         
         const correct = predictionsRounded.filter((pred, i) => Math.abs(pred - y[i]) < 0.01).length;
@@ -227,6 +385,7 @@ const ModelTrainer = {
             weights: w,
             featureNames: featureColumns,
             accuracy,
+            weightedAccuracy,
             correct,
             total: y.length,
             confusion,
@@ -240,6 +399,10 @@ const ModelTrainer = {
     // Perform feature ablation test - replace each column with average value (1.0)
     performAblationTest(X, y, uniqueValues, featureColumns, baselineCorrect, total, featureWeights = null) {
         const results = [];
+        
+        console.log('\n=== ABLATION TEST DEBUG ===');
+        console.log('Feature columns:', featureColumns);
+        console.log('Baseline correct:', baselineCorrect, 'out of', total);
         
         // For each feature column
         for (let excludeIdx = 0; excludeIdx < featureColumns.length; excludeIdx++) {
@@ -272,17 +435,64 @@ const ModelTrainer = {
                 impactPercentage: impactPercentage
             });
             
-            console.log(`Ablation: ${featureColumns[excludeIdx]} - Impact: ${impactPercentage.toFixed(2)}%`);
+            console.log(`Ablation: ${featureColumns[excludeIdx]} - Correct: ${correct_ablated}/${total}, Impact: ${impactPercentage.toFixed(2)}%`);
         }
         
-        // Sort by impact (highest first)
-        results.sort((a, b) => b.impactPercentage - a.impactPercentage);
+        console.log('\nAblation Test Results (in column order):');
+        results.forEach(r => console.log(`  ${r.feature}: ${r.impactPercentage.toFixed(2)}%`));
+        console.log('=== END ABLATION TEST ===\n');
         
+        // Return results in original column order (no sorting)
+        return results;
+    },
+    
+    // Perform ablation test for interaction models (neutralizes feature AND its interactions)
+    performAblationTestInteractions(X_base, y, uniqueValues, featureColumns, baselineCorrect, total, featureWeights = null) {
+        const results = [];
+        
+        // For each feature column
+        for (let excludeIdx = 0; excludeIdx < featureColumns.length; excludeIdx++) {
+            // Create X with this feature replaced by average value (1.0)
+            const X_ablated_base = X_base.map(row => {
+                const newRow = [...row]; // Copy the row
+                newRow[excludeIdx + 1] = 1.0; // Replace feature with average (skip bias at index 0)
+                return newRow;
+            });
+            
+            // Recreate interactions with the ablated feature
+            const X_ablated = LinearRegression.createInteractions(X_ablated_base);
+            
+            // Retrain model with this feature neutralized
+            const w_ablated = LinearRegression.calculateWeights(X_ablated, y, 0, featureWeights);
+            const predictions_ablated = LinearRegression.predict(X_ablated, w_ablated);
+            const predictionsRounded_ablated = LinearRegression.roundPredictions(predictions_ablated, uniqueValues);
+            
+            // Count correct predictions
+            const correct_ablated = predictionsRounded_ablated.filter((pred, i) => Math.abs(pred - y[i]) < 0.01).length;
+            
+            // Calculate impact: how many MORE incorrect predictions
+            const incorrectIncrease = baselineCorrect - correct_ablated;
+            
+            // Convert to percentage impact (relative to total)
+            const impactPercentage = (incorrectIncrease / total) * 100;
+            
+            results.push({
+                feature: featureColumns[excludeIdx],
+                baselineCorrect: baselineCorrect,
+                correctWithoutFeature: correct_ablated,
+                incorrectIncrease: incorrectIncrease,
+                impactPercentage: impactPercentage
+            });
+            
+            console.log(`Ablation (with interactions): ${featureColumns[excludeIdx]} - Impact: ${impactPercentage.toFixed(2)}%`);
+        }
+        
+        // Return results in original column order (no sorting)
         return results;
     },
 
     // Train Model 2: Linear Regression with Interactions
-    trainInteractions(X, y, uniqueValues, originalData, resultColumn, cellMapping, featureColumns, featureWeights = null) {
+    trainInteractions(X, y, uniqueValues, originalData, resultColumn, cellMapping, featureColumns, featureWeights = null, normalizationFactor = null) {
         const X_interactions = LinearRegression.createInteractions(X);
         // For interactions, only apply feature weights to original features, not interaction terms
         const w = LinearRegression.calculateWeights(X_interactions, y, 0, featureWeights);
@@ -290,9 +500,14 @@ const ModelTrainer = {
         const predictionsRounded = LinearRegression.roundPredictions(predictions, uniqueValues);
         
         const accuracy = LinearRegression.calculateAccuracy(y, predictionsRounded);
+        const weightedAccuracy = LinearRegression.calculateWeightedAccuracy(y, predictionsRounded, predictions, uniqueValues, normalizationFactor);
         const confusion = LinearRegression.buildConfusionMatrix(y, predictionsRounded, uniqueValues);
         
         const correct = predictionsRounded.filter((pred, i) => Math.abs(pred - y[i]) < 0.01).length;
+        
+        // Perform feature ablation test (neutralizes feature AND its interactions)
+        console.log('Performing feature ablation test for Model 2...');
+        const ablationResults = this.performAblationTestInteractions(X, y, uniqueValues, featureColumns, correct, y.length, featureWeights);
         
         // Generate feature names with interactions
         const interactionNames = [...featureColumns];
@@ -307,33 +522,36 @@ const ModelTrainer = {
             weights: w,
             featureNames: interactionNames,
             accuracy,
+            weightedAccuracy,
             correct,
             total: y.length,
             confusion,
             predictions: predictionsRounded,
             predictionScores: predictions,
+            ablation: ablationResults,
             useFeatureWeighting: !!featureWeights
         };
     },
 
     // Train Model 3: Polynomial Regression with Ridge
-    trainPolynomial(X, y, uniqueValues, originalData, resultColumn, cellMapping, featureColumns, featureWeights = null) {
+    trainPolynomial(X, y, uniqueValues, originalData, resultColumn, cellMapping, featureColumns, featureWeights = null, normalizationFactor = null) {
         const X_poly = LinearRegression.createPolynomial(X, 3);
         
         // Find best alpha for regular regression
         const alphas = [0.001, 0.01, 0.1, 1.0, 10.0];
         let bestAlpha = alphas[0];
-        let bestAccuracy = 0;
+        let bestWeightedAccuracy = Infinity; // Start with infinity since LOWER is better
         let bestW = null;
         
         alphas.forEach(alpha => {
             const w_test = LinearRegression.calculateWeights(X_poly, y, alpha, featureWeights);
             const pred_test = LinearRegression.predict(X_poly, w_test);
             const pred_rounded = LinearRegression.roundPredictions(pred_test, uniqueValues);
-            const acc = LinearRegression.calculateAccuracy(y, pred_rounded);
+            const weightedAcc = LinearRegression.calculateWeightedAccuracy(y, pred_rounded, pred_test, uniqueValues, normalizationFactor);
             
-            if (acc > bestAccuracy) {
-                bestAccuracy = acc;
+            // LOWER weighted accuracy is BETTER (it's a distance metric)
+            if (weightedAcc < bestWeightedAccuracy) {
+                bestWeightedAccuracy = weightedAcc;
                 bestAlpha = alpha;
                 bestW = w_test;
             }
@@ -344,6 +562,7 @@ const ModelTrainer = {
         const predictionsRounded = LinearRegression.roundPredictions(predictions, uniqueValues);
         
         const accuracy = LinearRegression.calculateAccuracy(y, predictionsRounded);
+        const weightedAccuracy = LinearRegression.calculateWeightedAccuracy(y, predictionsRounded, predictions, uniqueValues, normalizationFactor);
         const confusion = LinearRegression.buildConfusionMatrix(y, predictionsRounded, uniqueValues);
         
         const correct = predictionsRounded.filter((pred, i) => Math.abs(pred - y[i]) < 0.01).length;
@@ -353,6 +572,7 @@ const ModelTrainer = {
             weights: w,
             featureNames: ['polynomial_features'], // Simplified
             accuracy,
+            weightedAccuracy,
             correct,
             total: y.length,
             confusion,

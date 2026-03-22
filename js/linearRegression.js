@@ -99,7 +99,7 @@ const LinearRegression = {
         });
     },
 
-    // Calculate accuracy
+    // Calculate simple accuracy (percentage correct)
     calculateAccuracy(yTrue, yPred) {
         let correct = 0;
         for (let i = 0; i < yTrue.length; i++) {
@@ -108,6 +108,93 @@ const LinearRegression = {
             }
         }
         return (correct / yTrue.length) * 100;
+    },
+
+    // Calculate weighted accuracy score (average distance for incorrect predictions)
+    // LOWER score is BETTER (0 = perfect, higher = worse)
+    // Only considers incorrect predictions
+    // normalizationFactor: optional exponent value to normalize by transformation scale
+    calculateWeightedAccuracy(yTrue, yPred, yScores, uniqueValues, normalizationFactor = null) {
+        if (!yScores || yScores.length !== yTrue.length) {
+            // Fallback: return high value for bad accuracy
+            const simpleAcc = this.calculateAccuracy(yTrue, yPred);
+            return (100 - simpleAcc) / 10; // Scale to reasonable range
+        }
+        
+        // Calculate thresholds (decision boundaries) between categories
+        const sortedValues = [...uniqueValues].sort((a, b) => a - b);
+        const thresholds = [];
+        for (let i = 0; i < sortedValues.length - 1; i++) {
+            thresholds.push((sortedValues[i] + sortedValues[i + 1]) / 2);
+        }
+        
+        // Collect RAW distances for incorrect predictions
+        const incorrectDistances = [];
+        
+        for (let i = 0; i < yTrue.length; i++) {
+            const actualValue = yTrue[i];
+            const predictedValue = yPred[i];
+            const score = yScores[i];
+            
+            if (Math.abs(actualValue - predictedValue) < 0.01) {
+                // Correct prediction - skip
+                continue;
+            }
+            
+            // Incorrect prediction - find the closest threshold that would have made it correct
+            const actualIdx = sortedValues.findIndex(v => Math.abs(v - actualValue) < 0.01);
+            
+            if (actualIdx === -1) continue;
+            
+            // Calculate distance to the nearest threshold that would make prediction correct
+            let minDistanceToCorrect = Infinity;
+            let closestThreshold = null;
+            
+            if (actualIdx > 0) {
+                const lowerThreshold = thresholds[actualIdx - 1];
+                const dist = Math.abs(score - lowerThreshold);
+                if (dist < minDistanceToCorrect) {
+                    minDistanceToCorrect = dist;
+                    closestThreshold = lowerThreshold;
+                }
+            }
+            
+            if (actualIdx < sortedValues.length - 1) {
+                const upperThreshold = thresholds[actualIdx];
+                const dist = Math.abs(score - upperThreshold);
+                if (dist < minDistanceToCorrect) {
+                    minDistanceToCorrect = dist;
+                    closestThreshold = upperThreshold;
+                }
+            }
+            
+            // Store RAW distance
+            incorrectDistances.push(minDistanceToCorrect);
+            
+            console.log(`    Row ${i}: actual=${actualValue.toFixed(2)}, pred=${predictedValue.toFixed(2)}, score=${score.toFixed(4)}, threshold=${closestThreshold?.toFixed(2)}, raw_dist=${minDistanceToCorrect.toFixed(4)}`);
+        }
+        
+        // If no incorrect predictions, return 0 (perfect)
+        if (incorrectDistances.length === 0) {
+            return 0;
+        }
+        
+        // Calculate AVERAGE raw distance
+        const avgRawDistance = incorrectDistances.reduce((sum, d) => sum + d, 0) / incorrectDistances.length;
+        
+        // Apply normalization if provided
+        // The normalization factor accounts for how the exploration exponent affects the scale
+        // Higher exponents spread values more, so we divide by the exponent to normalize
+        let normalizedScore = avgRawDistance;
+        if (normalizationFactor !== null && normalizationFactor > 0) {
+            // Normalize by the exponent: divide by exponent to account for scale expansion
+            normalizedScore = avgRawDistance / normalizationFactor;
+            console.log(`  Weighted score: ${incorrectDistances.length} incorrect, avgRawDistance=${avgRawDistance.toFixed(4)}, normFactor=${normalizationFactor.toFixed(2)}, normalized=${normalizedScore.toFixed(4)}`);
+        } else {
+            console.log(`  Weighted score: ${incorrectDistances.length} incorrect, avgRawDistance=${avgRawDistance.toFixed(4)} (no normalization)`);
+        }
+        
+        return normalizedScore;
     },
 
     // Build confusion matrix

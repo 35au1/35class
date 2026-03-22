@@ -75,7 +75,13 @@ function setupEventListeners() {
     document.getElementById('trainModels').addEventListener('click', handleTrainModels);
     
     // Step 5: View results
-    document.getElementById('nextToPredict').addEventListener('click', () => showStep(6));
+    document.getElementById('nextToPredict').addEventListener('click', () => {
+        // Hide the animated borders when moving to prediction step
+        document.querySelectorAll('.emphasized-section').forEach(el => {
+            el.style.display = 'none';
+        });
+        showStep(6);
+    });
     
     // Step 6: Upload test data and predict
     document.getElementById('testFile').addEventListener('change', handleTestUpload);
@@ -176,7 +182,18 @@ function showColumnSelection() {
     container.innerHTML = html;
     
     // Always show "Load Saved Configuration" button
-    document.getElementById('loadConfig').classList.remove('hidden');
+    const loadConfigBtn = document.getElementById('loadConfig');
+    loadConfigBtn.classList.remove('hidden');
+    
+    // If config exists, highlight the button with blue background
+    if (Storage.hasConfigCache()) {
+        loadConfigBtn.style.backgroundColor = '#6f42c1';
+        loadConfigBtn.style.color = '#ffffff';
+    } else {
+        loadConfigBtn.style.backgroundColor = '';
+        loadConfigBtn.style.color = '';
+    }
+    
     document.getElementById('nextToColumnTypes').classList.remove('hidden');
 }
 

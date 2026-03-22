@@ -20,7 +20,8 @@ const ModelPredictor = {
             throw new Error('Feature columns not defined. Please retrain models.');
         }
         
-        // Check if experimental mode (6 models)
+        // Check if experimental mode (9 models with penalty, 6 models, or 3 models)
+        const hasPenaltyModels = trainedModels.model7 !== undefined;
         const isExperimentalMode = trainedModels.model4 !== undefined;
         
         const uniqueValues = trainedModels.uniqueValues;
@@ -75,20 +76,45 @@ const ModelPredictor = {
             returnObj.model6 = pred6;
         }
         
+        // If penalty models exist, also predict with models 7-9
+        if (hasPenaltyModels) {
+            console.log('⚖️ Penalty mode: Predicting with models 7-9');
+            
+            const pred7 = this.predictWithModel(testData, trainedModels.model7, cellMapping, featureColumns, resultColumn, uniqueValues, reverseMapping);
+            const pred8 = this.predictWithModel(testData, trainedModels.model8, cellMapping, featureColumns, resultColumn, uniqueValues, reverseMapping);
+            const pred9 = this.predictWithModel(testData, trainedModels.model9, cellMapping, featureColumns, resultColumn, uniqueValues, reverseMapping);
+            
+            // Add penalty predictions to results
+            results.forEach((row, i) => {
+                row.model7_score = pred7.scores[i];
+                row.model7_prediction = pred7.categories[i];
+                row.model8_score = pred8.scores[i];
+                row.model8_prediction = pred8.categories[i];
+                row.model9_score = pred9.scores[i];
+                row.model9_prediction = pred9.categories[i];
+            });
+            
+            returnObj.model7 = pred7;
+            returnObj.model8 = pred8;
+            returnObj.model9 = pred9;
+        }
+        
         return returnObj;
     },
     
-    // Predict with a single model (handles exponent transformations)
+    // Predict with a single model (handles exponent transformations and penalty-based transformations)
     predictWithModel(testData, model, cellMapping, featureColumns, resultColumn, uniqueValues, reverseMapping) {
-        // Check if model uses exponent transformations
+        // Check if model uses exponent transformations or penalty-based transformations
         const useExponents = model.combinedExponents !== undefined;
+        const usePenalty = model.penalties !== undefined;
         
-        // CORRECT ORDER: Normalize FIRST, then apply exponents to normalized values
+        // CORRECT ORDER: Normalize FIRST, then apply transformations to normalized values
         // Step 1: Encode/normalize the raw data (0.2-2.0 range)
         const { encoded } = DataEncoder.encodeData(testData, cellMapping, featureColumns, resultColumn);
         
-        // Step 2: Apply exponent transformations to NORMALIZED values (if using dual-exponent mode)
+        // Step 2: Apply transformations to NORMALIZED values
         let transformedEncoded = encoded;
+        
         if (useExponents) {
             console.log('🔬 Applying exponent transformations to normalized values:', model.combinedExponents.map(e => e.toFixed(2)));
             
@@ -100,6 +126,24 @@ const ModelPredictor = {
                         const exp = model.combinedExponents[i];
                         // Apply exponent to normalized value
                         transformed[col] = Math.pow(normalizedValue, exp);
+                    }
+                });
+                return transformed;
+            });
+        } else if (usePenalty) {
+            console.log('⚖️ Applying penalty-based reduction to normalized values');
+            console.log('   Penalties:', model.penalties.map(p => p.toFixed(2)));
+            console.log('   Strengths:', model.penaltyStrengths.map(s => s.toFixed(2)));
+            
+            transformedEncoded = encoded.map(row => {
+                const transformed = { ...row };
+                featureColumns.forEach((col, i) => {
+                    const normalizedValue = row[col];
+                    if (!isNaN(normalizedValue)) {
+                        // Reduce importance: bring value closer to 1.0 based on penalty strength
+                        const deviation = normalizedValue - 1.0;
+                        const reductionFactor = Math.max(0, 1.0 - model.penaltyStrengths[i]);
+                        transformed[col] = 1.0 + (deviation * reductionFactor);
                     }
                 });
                 return transformed;
