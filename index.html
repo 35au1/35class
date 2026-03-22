@@ -10,7 +10,7 @@
     <div class="container">
         <header>
             <h1>KAPA Data Classification Engine</h1>
-            <p>Analyze data, discover and train model, predict classification and export classification models</p>
+            <p>Analyze, discover, train, predict and export classification models</p>
         </header>
 
         <main>
@@ -56,7 +56,11 @@
             <section id="step5" class="step hidden">
                 <h2>Step 5: Training Results</h2>
                 <div id="trainingResults"></div>
-                <button id="nextToPredict" class="btn btn-primary">Next: Make Predictions</button>
+                <div class="emphasized-section">
+                    <div class="emphasized-section-inner">
+                        <button id="nextToPredict" class="btn btn-primary" style="width: 100%;">Next: Make Predictions</button>
+                    </div>
+                </div>
             </section>
 
             <!-- Step 6: Upload Test Data & Predict -->
@@ -87,16 +91,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
 
     <!-- Application Scripts -->
-    <script src="js/storage.js?v=2"></script>
-    <script src="js/csvParser.js?v=2"></script>
-    <script src="js/dataClean.js?v=2"></script>
-    <script src="js/dataEncode.js?v=2"></script>
-    <script src="js/linearRegression.js?v=2"></script>
-    <script src="js/optimizationEngine.js?v=2"></script>
-    <script src="js/modelTrain.js?v=2"></script>
-    <script src="js/modelPredict.js?v=2"></script>
-    <script src="js/results.js?v=2"></script>
-    <script src="js/cellMapping.js?v=2"></script>
-    <script src="js/app.js?v=2"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/csvParser.js"></script>
+    <script src="js/dataClean.js"></script>
+    <script src="js/dataEncode.js"></script>
+    <script src="js/linearRegression.js"></script>
+    <script src="js/optimizationEngine.js"></script>
+    <script src="js/modelTrain.js"></script>
+    <script src="js/modelPredict.js"></script>
+    <script src="js/modelVisualization.js"></script>
+    <script src="js/predictionTableBuilder.js"></script>
+    <script src="js/predictionDistanceVisualization.js"></script>
+    <script src="js/whatIfAnalysis.js"></script>
+    <script src="js/results.js"></script>
+    <script src="js/cellMapping.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
