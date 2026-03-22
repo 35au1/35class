@@ -415,6 +415,10 @@ header p {
 .result-card h3 {
     margin-bottom: 10px;
     color: #2c3e50;
+    min-height: 3em;
+    line-height: 1.5em;
+    display: flex;
+    align-items: center;
 }
 
 .model-details h3 {
@@ -483,6 +487,8 @@ header p {
     font-family: 'Courier New', monospace;
     overflow-x: auto;
     margin: 10px 0;
+    word-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 footer {
@@ -684,4 +690,496 @@ footer .footer-text {
 
 .exponent-info strong {
     color: #2980b9;
+}
+
+/* Model Visualization Styles */
+.model-visualization {
+    margin: 30px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid #3498db;
+}
+
+.model-visualization h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #2c3e50;
+}
+
+/* Visualization Guide */
+.viz-guide {
+    margin: 20px 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.viz-guide-toggle {
+    width: auto;
+    padding: 12px 20px;
+    background: transparent;
+    color: #3498db;
+    border: 2px solid #3498db;
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.viz-guide-toggle:hover {
+    background: rgba(52, 152, 219, 0.05);
+    border-color: #2980b9;
+    color: #2980b9;
+}
+
+.viz-guide-content {
+    padding: 20px;
+    background: white;
+}
+
+.viz-guide-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.viz-guide-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.viz-guide-section h4 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1.1em;
+}
+
+.viz-guide-example {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #3498db;
+}
+
+.viz-guide-example p {
+    margin: 8px 0;
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+.viz-guide-example ul {
+    margin: 8px 0;
+}
+
+.viz-guide-example ul li {
+    margin: 5px 0;
+}
+
+.viz-guide-bars {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    align-items: flex-end;
+    margin: 15px 0;
+    padding: 20px;
+    background: white;
+    border-radius: 4px;
+}
+
+.viz-guide-bar {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #2c3e50;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.viz-guide-bar span {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+}
+
+/* Formula Toggle Buttons */
+.formula-toggle-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin: 10px 5px;
+    background: #95a5a6;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: normal;
+}
+
+.formula-toggle-btn:hover {
+    background: #7f8c8d;
+}
+
+.formula-toggle-btn.active {
+    background: #3498db;
+    color: white;
+}
+
+.formula-toggle-btn.active:hover {
+    background: #2980b9;
+}
+
+/* Coefficient Visualization Chart */
+.coefficient-chart-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 20px 0;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: white;
+}
+
+.coefficient-chart {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-end;
+    gap: 15px;
+    padding: 30px 20px;
+    background: white;
+    min-height: 300px;
+    width: max-content;
+    min-width: 100%;
+}
+
+.coef-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 40px;
+    max-width: 40px;
+}
+
+.coef-bar-container {
+    width: 100%;
+    height: 200px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    position: relative;
+}
+
+.coef-bar {
+    width: 100%;
+    min-height: 5px;
+    border-radius: 4px 4px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.coef-bar:hover {
+    opacity: 0.8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.coef-value-vertical {
+    color: white;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+}
+
+.coef-value {
+    color: white;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.coef-label-vertical {
+    margin-top: 10px;
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: center;
+    font-size: 0.8em;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.coef-label {
+    margin-top: 10px;
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: center;
+    font-size: 0.95em;
+}
+
+.coef-sign {
+    margin-top: 5px;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #7f8c8d;
+}
+
+.viz-columns-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    gap: 20px;
+    margin-top: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.viz-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 120px;
+}
+
+.viz-column-header {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 0.95em;
+}
+
+.viz-bar-container {
+    position: relative;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.viz-bar {
+    position: relative;
+    height: 280px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px 5px;
+    background: white; /* Changed from gradient to white base */
+    overflow: hidden;
+}
+
+.viz-bar:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    transform: scale(1.05);
+}
+
+.viz-center-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #2c3e50;
+    transform: translateY(-50%);
+    z-index: 10;
+}
+
+.viz-center-line::before {
+    content: '1.0';
+    position: absolute;
+    right: -35px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8em;
+    font-weight: 600;
+    color: #2c3e50;
+    background: white;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.viz-value-marker {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.75em;
+    font-weight: 600;
+    color: #2c3e50;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.viz-value-marker.viz-top {
+    top: 5px;
+}
+
+.viz-value-marker.viz-middle {
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(44, 62, 80, 0.9);
+    color: white;
+}
+
+.viz-value-marker.viz-bottom {
+    bottom: 5px;
+}
+
+.viz-column-info {
+    margin-top: 15px;
+    padding: 10px;
+    background: #e8f4f8;
+    border-radius: 6px;
+    min-width: 100px;
+    text-align: center;
+}
+
+.viz-info-line {
+    font-size: 0.85em;
+    color: #2c3e50;
+    margin: 3px 0;
+}
+
+.viz-info-line strong {
+    color: #2980b9;
+}
+
+/* Distribution segments inside bars */
+.viz-segment {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+.viz-bar:hover .viz-segment {
+    opacity: 0.9;
+}
+
+/* Separator lines (thin reference lines) */
+.viz-separator-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(44, 62, 80, 0.4);
+    z-index: 10;
+}
+
+.viz-line-label {
+    position: absolute;
+    left: -30px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7em;
+    color: #2c3e50;
+    font-weight: 600;
+    background: white;
+    padding: 1px 3px;
+    border-radius: 2px;
+}
+
+/* Remove old distribution line styles */
+.viz-distribution-line {
+    display: none;
+}
+
+/* Stretch and compress indicators */
+.viz-stretch-indicator,
+.viz-compress-indicator {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5em;
+    font-weight: bold;
+    z-index: 15;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.viz-stretch-indicator {
+    color: rgba(255, 152, 0, 0.8);
+}
+
+.viz-compress-indicator {
+    color: rgba(76, 175, 80, 0.8);
+}
+
+.viz-stretch-indicator.viz-up,
+.viz-compress-indicator.viz-up {
+    top: 15%;
+}
+
+.viz-stretch-indicator.viz-down,
+.viz-compress-indicator.viz-down {
+    bottom: 15%;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: translateX(-50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1.2);
+    }
+}
+
+@keyframes crawl {
+    0% {
+        background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+    }
+    100% {
+        background-position: 100% 0, 100% 100%, 0 100%, 0 0;
+    }
+}
+
+.emphasized-section {
+    position: relative;
+    padding: 8px;
+    margin: 8px 0;
+    border-radius: 8px;
+    background: 
+        linear-gradient(90deg, #3498db 50%, transparent 50%),
+        linear-gradient(180deg, #3498db 50%, transparent 50%),
+        linear-gradient(270deg, #3498db 50%, transparent 50%),
+        linear-gradient(0deg, #3498db 50%, transparent 50%);
+    background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
+    background-size: 20px 3px, 3px 20px, 20px 3px, 3px 20px;
+    background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+    animation: crawl 2s linear infinite;
+}
+
+.emphasized-section-inner {
+    background: white;
+    padding: 5px;
+    border-radius: 5px;
 }
