@@ -12,9 +12,12 @@ const ModelTrainer = {
     // Train using standard regression
     trainWithRegression(data, cellMapping, featureColumns, resultColumn) {
         console.log('Starting model training...');
+        console.log('🔍 cellMapping._exponentsEnabled:', cellMapping._exponentsEnabled);
+        console.log('🔍 cellMapping keys:', Object.keys(cellMapping));
         
         // Check if experimental mode (feature weighting) is enabled
         const useFeatureWeighting = cellMapping._exponentsEnabled || false;
+        console.log('🔍 useFeatureWeighting:', useFeatureWeighting);
         let featureWeights = null;
         
         if (useFeatureWeighting) {

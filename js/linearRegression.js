@@ -67,11 +67,18 @@ const LinearRegression = {
             return wArray;
         } catch (error) {
             console.error('Error calculating weights:', error);
+            console.error('X shape:', Array.isArray(X) ? `${X.length}x${X[0].length}` : 'unknown');
+            console.error('y shape:', Array.isArray(y) ? y.length : 'unknown');
+            console.error('y unique values:', [...new Set(y)]);
+            console.error('X sample (first 3 rows):', X.slice(0, 3));
+            console.error('y sample (first 10):', y.slice(0, 10));
+            
             throw new Error('Cannot calculate model weights. This may happen if:\n' +
                 '1. Result column categories have identical slider values\n' +
                 '2. Not enough data variation\n' +
                 '3. Duplicate or constant columns\n\n' +
-                'Please check your mappings and ensure categories have different values.');
+                'Please check your mappings and ensure categories have different values.\n\n' +
+                'Debug info: Check browser console for details.');
         }
     },
 

@@ -8,6 +8,10 @@ const CSVParser = {
                 header: true,
                 skipEmptyLines: true,
                 delimiter: ';',
+                transform: (value) => {
+                    // Trim all string values to remove leading/trailing whitespace
+                    return typeof value === 'string' ? value.trim() : value;
+                },
                 complete: (results) => {
                     if (results.errors.length > 0) {
                         reject(results.errors);

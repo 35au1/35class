@@ -2,8 +2,15 @@
 
 const DataEncoder = {
     // Normalize numeric value using 3-point piecewise linear scale
-    normalizeNumeric(value, min, avg, max) {
+    normalizeNumeric(value, min, avg, max, reverse = false) {
         const x = parseFloat(value);
+        
+        // If reverse is true, swap min and max to invert the mapping
+        if (reverse) {
+            const temp = min;
+            min = max;
+            max = temp;
+        }
         
         if (x <= min) {
             return 0.2;
@@ -27,6 +34,13 @@ const DataEncoder = {
             const mapping = cellMapping[cName];
             const value = row[col];
 
+            if (!mapping) {
+                console.error(`Missing mapping for column ${col} (${cName})`);
+                console.error('Available mappings:', Object.keys(cellMapping));
+                console.error('Feature columns:', featureColumns);
+                throw new Error(`Missing mapping for column: ${col}. Please reconfigure your mappings.`);
+            }
+
             let encodedValue;
             
             if (mapping.type === 'numeric') {
@@ -35,7 +49,8 @@ const DataEncoder = {
                     value,
                     mapping.min,
                     mapping.avg,
-                    mapping.max
+                    mapping.max,
+                    mapping.reverse || false
                 );
             } else {
                 // Encode categorical column
@@ -58,7 +73,24 @@ const DataEncoder = {
         const resultCName = `C${featureColumns.length + 1}`;
         const resultMapping = cellMapping[resultCName];
         
-        const y = data.map(row => resultMapping[row[resultColumn]]);
+        console.log('🔍 Result column name:', resultColumn);
+        console.log('🔍 Result column cName:', resultCName);
+        console.log('🔍 Result column mapping:', resultMapping);
+        console.log('🔍 Result column mapping keys:', Object.keys(resultMapping));
+        console.log('🔍 Sample result values from data:', data.slice(0, 5).map(row => `"${row[resultColumn]}"`));
+        
+        const y = data.map((row, idx) => {
+            const rawValue = row[resultColumn];
+            const value = resultMapping[rawValue];
+            if (value === undefined) {
+                console.error(`Row ${idx}: Missing mapping for result value: "${rawValue}" (type: ${typeof rawValue})`);
+                console.error(`Available keys:`, Object.keys(resultMapping).map(k => `"${k}" (type: ${typeof k})`));
+            }
+            return value;
+        });
+        
+        console.log('🔍 Encoded y values:', y);
+        console.log('🔍 Unique y values:', [...new Set(y)]);
         
         return { encoded, y };
     },
@@ -67,7 +99,11 @@ const DataEncoder = {
     getUniqueValues(cellMapping, featureColumns) {
         const resultCName = `C${featureColumns.length + 1}`;
         const resultMapping = cellMapping[resultCName];
-        return Object.values(resultMapping).sort((a, b) => a - b);
+        // Filter out non-numeric properties like 'exponent' and 'type'
+        return Object.entries(resultMapping)
+            .filter(([key]) => key !== 'exponent' && key !== 'type')
+            .map(([, val]) => val)
+            .sort((a, b) => a - b);
     },
 
     // Get reverse mapping for result column
@@ -76,7 +112,10 @@ const DataEncoder = {
         const resultMapping = cellMapping[resultCName];
         const reverse = {};
         Object.entries(resultMapping).forEach(([key, val]) => {
-            reverse[val] = key;
+            // Skip non-category properties
+            if (key !== 'exponent' && key !== 'type') {
+                reverse[val] = key;
+            }
         });
         return reverse;
     }

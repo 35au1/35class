@@ -277,14 +277,14 @@ const ResultsDisplay = {
         
         if (hasPenaltyModels) {
             html += '<div class="info" style="background: #fff3cd; border-left: 4px solid #ffc107; margin-bottom: 20px; color: #856404;">';
-            html += '<strong>?? Experimental Mode Active (3 Approaches)</strong><br>';
+            html += '<strong>Experimental Mode Active (3 Approaches)</strong><br>';
             html += 'Row 1: Standard models (baseline)<br>';
-            html += 'Row 2: Dual-exponent models (weight ? exploration)<br>';
+            html += 'Row 2: Dual-exponent models (weight x exploration)<br>';
             html += 'Row 3: Penalty-based models (penalty = 2.0 - weight, strength controlled by exploration exponent)';
             html += '</div>';
         } else if (isExperimentalMode) {
             html += '<div class="info" style="background: #fff3cd; border-left: 4px solid #ffc107; margin-bottom: 20px; color: #856404;">';
-            html += '<strong>?? Experimental Mode Active</strong><br>';
+            html += '<strong>Experimental Mode Active</strong><br>';
             html += 'Showing both standard models (top row) and experimental dual-exponent models (bottom row) for comparison.';
             html += '</div>';
         }
@@ -378,7 +378,7 @@ const ResultsDisplay = {
             html += this.generateModelEvaluationForModel(model, modelNum, trainedModels, featureColumns);
             
             // Add formulas (pass model number and trainedModels for the button)
-            html += this.generateFormulas(model, featureColumns, cellMapping, reverseMapping, categories, modelNum, trainedModels);
+            html += this.generateFormulas(model, featureColumns, cellMapping, reverseMapping, categories, modelNum, trainedModels, originalData, resultColumn);
             
             // Add visualization
             const vizElement = ModelVisualization.generateVisualization(model, featureColumns, cellMapping);
@@ -662,7 +662,7 @@ const ResultsDisplay = {
         
         // Add note about contradictory signs
         html += '<div style="margin: 15px 0; padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px;">';
-        html += '<strong>?? Note:</strong> If results show contradictory +/- signs compared to expectations, this indicates a <strong>mirrored model</strong> has been trained. ';
+        html += '<strong>Note:</strong> If results show contradictory +/- signs compared to expectations, this indicates a <strong>mirrored model</strong> has been trained. ';
         html += 'The model emphasizes low impact in that dimension rather than high impact. The absolute values shown here represent the strength of influence regardless of direction.';
         html += '</div>';
         
@@ -708,7 +708,7 @@ const ResultsDisplay = {
         const categories = trainedModels.uniqueValues;
         
         let html = '<div class="info" style="background: #fff3cd; border-left: 4px solid #ffc107; color: #856404;">';
-        html += '<strong>?? Optimization Engine Mode</strong><br>';
+        html += '<strong>Optimization Engine Mode</strong><br>';
         html += 'Using iterative optimization approach (Scripts 2-15 logic) instead of linear regression.<br>';
         html += 'Accuracy = Retention Rate (percentage of records kept after removing overlaps)';
         html += '</div>';
@@ -817,7 +817,7 @@ const ResultsDisplay = {
     },
 
     // Generate formulas with normalization
-    generateFormulas(model, featureColumns, cellMapping, reverseMapping, categories, modelNum, trainedModels) {
+    generateFormulas(model, featureColumns, cellMapping, reverseMapping, categories, modelNum, trainedModels, originalData, resultColumn) {
         let html = '';
         
         // Create unique IDs for collapsible sections
@@ -826,6 +826,7 @@ const ResultsDisplay = {
         const excelId = `excel_${Math.random().toString(36).substr(2, 9)}`;
         const ablationId = `ablation_${Math.random().toString(36).substr(2, 9)}`;
         const exponentId = `exponent_${Math.random().toString(36).substr(2, 9)}`;
+        const reportId = `report_${Math.random().toString(36).substr(2, 9)}`;
         
         // Check if this model has ablation data
         const hasAblation = model.ablation && (modelNum === 1 || modelNum === 2 || modelNum === 4 || modelNum === 5 || modelNum === 7 || modelNum === 8);
@@ -847,6 +848,7 @@ const ResultsDisplay = {
         if (hasExponentExploration) {
             html += `<button class="formula-toggle-btn" onclick="document.getElementById('${exponentId}').style.display = document.getElementById('${exponentId}').style.display === 'none' ? 'block' : 'none'; this.classList.toggle('active');">Exponent Exploration</button>`;
         }
+        html += `<button class="formula-toggle-btn" onclick="document.getElementById('${reportId}').style.display = document.getElementById('${reportId}').style.display === 'none' ? 'block' : 'none'; this.classList.toggle('active');">Summary Report</button>`;
         html += '</div>';
         html += '</div></div>';
         
@@ -858,7 +860,7 @@ const ResultsDisplay = {
         if (model.explorationExponent !== undefined && model.combinedExponents && model.combinedExponents.length > 0) {
             html += `
                 <div class="exponent-details" style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin-bottom: 20px; border-radius: 5px;">
-                    <h4 style="margin-top: 0; color: #856404;">?? Dual-Exponent Transformation</h4>
+                    <h4 style="margin-top: 0; color: #856404;">Dual-Exponent Transformation</h4>
                     <p style="margin: 5px 0; color: #856404;"><strong>Exploration Exponent (2nd):</strong> ${model.explorationExponent.toFixed(1)}</p>
                     <p style="margin: 5px 0; color: #856404;"><strong>Combined Exponents:</strong></p>
                     <ul style="margin: 5px 0; padding-left: 20px; color: #856404;">
@@ -887,7 +889,7 @@ const ResultsDisplay = {
             // Penalty-based model
             html += `
                 <div class="exponent-details" style="background: #e7f3ff; padding: 15px; border-left: 4px solid #2196F3; margin-bottom: 20px; border-radius: 5px;">
-                    <h4 style="margin-top: 0; color: #1565C0;">?? Penalty-Based Transformation</h4>
+                    <h4 style="margin-top: 0; color: #1565C0;">Penalty-Based Transformation</h4>
                     <p style="margin: 5px 0; color: #1565C0;"><strong>Exploration Exponent:</strong> ${model.explorationExponent.toFixed(1)}</p>
                     <p style="margin: 5px 0; color: #1565C0;"><strong>Penalty Calculation:</strong></p>
                     <ul style="margin: 5px 0; padding-left: 20px; color: #1565C0;">
@@ -921,7 +923,7 @@ const ResultsDisplay = {
         });
         
         if (exponentsEnabled && hasAnyExponent && !model.explorationExponent) {
-            html += '<p class="section-description" style="background: #fff3cd; border-left-color: #ffc107;">?? Experimental feature active: Features weighted during regression (higher weight = more influence on optimization)</p>';
+            html += '<p class="section-description" style="background: #fff3cd; border-left-color: #ffc107;">Experimental feature active: Features weighted during regression (higher weight = more influence on optimization)</p>';
         }
         
         // Determine model type based on feature names
@@ -1112,13 +1114,13 @@ const ResultsDisplay = {
         
         // Add visual guide for Excel usage
         html += '<div style="background: #f8f9fa; border-left: 4px solid #28a745; padding: 15px; margin-bottom: 15px; border-radius: 5px;">';
-        html += '<p style="margin: 0 0 10px 0; font-weight: bold; color: #28a745;">?? How to use this formula in Excel:</p>';
+        html += '<p style="margin: 0 0 10px 0; font-weight: bold; color: #28a745;">How to use this formula in Excel:</p>';
         html += '<div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-size: 0.9em;">';
-        html += '<div style="text-align: center; font-size: 1.2em;">1??</div><div>Put your data in columns A, B, C, etc. (starting from row 2)</div>';
-        html += '<div style="text-align: center; font-size: 1.2em;">2??</div><div>Click on the cell where you want the prediction (e.g., D2)</div>';
-        html += '<div style="text-align: center; font-size: 1.2em;">3??</div><div>Copy the formula below and paste it into that cell</div>';
-        html += '<div style="text-align: center; font-size: 1.2em;">4??</div><div>Press Enter - you should see the predicted category!</div>';
-        html += '<div style="text-align: center; font-size: 1.2em;">5??</div><div>Drag the formula down to predict for all rows</div>';
+        html += '<div style="text-align: center; font-size: 1.2em;">1.</div><div>Put your data in columns A, B, C, etc. (starting from row 2)</div>';
+        html += '<div style="text-align: center; font-size: 1.2em;">2.</div><div>Click on the cell where you want the prediction (e.g., D2)</div>';
+        html += '<div style="text-align: center; font-size: 1.2em;">3.</div><div>Copy the formula below and paste it into that cell</div>';
+        html += '<div style="text-align: center; font-size: 1.2em;">4.</div><div>Press Enter - you should see the predicted category!</div>';
+        html += '<div style="text-align: center; font-size: 1.2em;">5.</div><div>Drag the formula down to predict for all rows</div>';
         html += '</div>';
         html += '<div style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 3px; font-family: monospace; font-size: 0.85em;">';
         html += '<strong>Example layout:</strong><br>';
@@ -1160,6 +1162,18 @@ const ResultsDisplay = {
             html += '</div>';
         }
         
+        
+        // Summary Report Section (hidden by default)
+        html += `<div id="${reportId}" style="display: none;">`;
+        const reportText = SummaryReport.generateTrainingReport(model, modelNum, featureColumns, originalData, resultColumn, cellMapping, reverseMapping, trainedModels);
+        html += '<div style="margin-top: 20px;">';
+        html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">';
+        html += '<h3 style="margin: 0;">Summary Report</h3>';
+        html += `<button onclick="SummaryReport.copyReport('report_${reportId}_textarea')" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Copy to Clipboard</button>`;
+        html += '</div>';
+        html += `<textarea id="report_${reportId}_textarea" readonly style="width: 100%; height: 400px; font-family: 'Courier New', monospace; font-size: 12px; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; background: #f8f9fa; resize: vertical;">${reportText}</textarea>`;
+        html += '</div>';
+        html += '</div>';
         return html;
     },
 
@@ -1416,7 +1430,7 @@ const ResultsDisplay = {
     generateExcelFormulaStructured(model, featureColumns, cellMapping, categories, thresholds, isInteractions, isPolynomial) {
         let output = '';
         
-        output += '<h4>?? Structured Approach (Recommended)</h4>';
+        output += '<h4>Structured Approach (Recommended)</h4>';
         output += '<p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">Break down the calculation into separate cells for clarity and easier debugging</p>';
         
         output += '<div class="formula-box">';
@@ -1543,7 +1557,7 @@ const ResultsDisplay = {
     generateExcelFormulaCompact(model, featureColumns, cellMapping, categories, thresholds, isInteractions, isPolynomial) {
         let output = '';
         
-        output += '<h4 style="margin-top: 20px;">?? Single-Cell Formula (Compact)</h4>';
+        output += '<h4 style="margin-top: 20px;">Single-Cell Formula (Compact)</h4>';
         output += '<p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">All-in-one formula - paste directly into prediction cell</p>';
         
         output += '<div class="formula-box">';
@@ -1668,7 +1682,7 @@ const ResultsDisplay = {
     generateExcelFormulaCompact(model, featureColumns, cellMapping, categories, thresholds, isInteractions, isPolynomial) {
         let output = '';
         
-        output += '<h4 style="margin-top: 20px;">?? Single-Cell Formula (Compact)</h4>';
+        output += '<h4 style="margin-top: 20px;">Single-Cell Formula (Compact)</h4>';
         output += '<p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">All-in-one formula - paste directly into prediction cell</p>';
         
         output += '<div class="formula-box">';
@@ -1796,12 +1810,12 @@ const ResultsDisplay = {
         
         if (hasPenaltyModels) {
             html += '<div class="info" style="background: #fff3cd; border-left: 4px solid #ffc107; margin-bottom: 20px; color: #856404;">';
-            html += '<strong>?? Experimental Mode Active (3 Approaches)</strong><br>';
+            html += '<strong>Experimental Mode Active (3 Approaches)</strong><br>';
             html += 'Row 1: Standard models, Row 2: Dual-exponent models, Row 3: Penalty-based models';
             html += '</div>';
         } else if (isExperimentalMode) {
             html += '<div class="info" style="background: #fff3cd; border-left: 4px solid #ffc107; margin-bottom: 20px; color: #856404;">';
-            html += '<strong>?? Experimental Mode Active</strong><br>';
+            html += '<strong>Experimental Mode Active</strong><br>';
             html += 'Showing predictions from both standard models (top row) and experimental dual-exponent models (bottom row).';
             html += '</div>';
         }
@@ -2032,7 +2046,7 @@ const ResultsDisplay = {
                 }
             });
             
-            console.log('?? Prediction confusion matrix debug:');
+            console.log('Prediction confusion matrix debug:');
             console.log('  Total test rows:', testData.length);
             console.log('  Rows with actual values:', yTrue.length);
             console.log('  yTrue:', yTrue);
@@ -2151,6 +2165,13 @@ const ResultsDisplay = {
         
         // Preview results for this model
         html += `<h3>Prediction Results (First 20 rows - Model ${modelNum})</h3>`;
+        
+        // Add Summary Report button
+        const reportId = `pred_report_${Math.random().toString(36).substr(2, 9)}`;
+        html += '<div style="margin: 15px 0;">';
+        html += `<button class="formula-toggle-btn" onclick="document.getElementById('${reportId}').style.display = document.getElementById('${reportId}').style.display === 'none' ? 'block' : 'none'; this.classList.toggle('active');">Summary Report</button>`;
+        html += '</div>';
+        
         html += '<div class="preview"><table><thead><tr>';
         
         // Define columns to show
@@ -2241,6 +2262,18 @@ const ResultsDisplay = {
         
         html += '</tbody></table></div>';
         
+        // Summary Report Section (hidden by default)
+        html += `<div id="${reportId}" style="display: none;">`;
+        const reportText = SummaryReport.generatePredictionReport(predictions, testData, modelNum, modelKey, featureColumns, resultColumn, cellMapping, reverseMapping);
+        html += '<div style="margin-top: 20px;">';
+        html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">';
+        html += '<h3 style="margin: 0;">Summary Report</h3>';
+        html += `<button onclick="SummaryReport.copyReport('report_${reportId}_textarea')" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Copy to Clipboard</button>`;
+        html += '</div>';
+        html += `<textarea id="report_${reportId}_textarea" readonly style="width: 100%; height: 400px; font-family: 'Courier New', monospace; font-size: 12px; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; background: #f8f9fa; resize: vertical;">${reportText}</textarea>`;
+        html += '</div>';
+        html += '</div>';
+        
         return html;
     },
 
@@ -2290,3 +2323,4 @@ const ResultsDisplay = {
         }
     }
 };
+

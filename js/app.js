@@ -111,6 +111,16 @@ async function handleTrainingUpload(e) {
             throw new Error('CSV file is empty');
         }
         
+        // Clear previous configuration when new CSV is uploaded
+        // This prevents using incompatible cached mappings
+        appState.cellMapping = null;
+        appState.featureColumns = null;
+        appState.resultColumn = null;
+        appState.columnTypes = null;
+        appState.trainedModels = null;
+        
+        console.log('🔄 Cleared previous configuration for new CSV upload');
+        
         // Show preview
         displayDataPreview(data, 'trainingPreview');
         

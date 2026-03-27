@@ -230,10 +230,14 @@ const CellMappingUI = {
         const columns = document.querySelectorAll('.mapping-column');
         console.log('🔍 Found', columns.length, 'mapping columns');
         
+        // Determine which is the result column (last one)
+        const resultCName = `C${columns.length}`;
+        
         columns.forEach(column => {
             const cName = column.dataset.cname;
             const col = column.dataset.column;
-            console.log(`🔍 Processing ${cName} (${col})`);
+            const isResultColumn = (cName === resultCName);
+            console.log(`🔍 Processing ${cName} (${col})${isResultColumn ? ' [RESULT COLUMN]' : ''}`);
             
             const numericInputs = column.querySelector('.numeric-mapping-inline');
             
@@ -253,21 +257,37 @@ const CellMappingUI = {
                     throw new Error(`Invalid numeric values for ${col}. Please fill all three fields (min, avg, max).`);
                 }
                 
-                if (!(min < avg && avg < max)) {
-                    throw new Error(`For ${col}: min < avg < max required. Got min=${min}, avg=${avg}, max=${max}`);
+                // Check if it's a reverse mapping (min > max)
+                const isReverse = min > max;
+                
+                // Validate based on direction
+                if (isReverse) {
+                    // Reverse mapping: min > avg > max (higher values = worse)
+                    if (!(min > avg && avg > max)) {
+                        throw new Error(`For ${col} (reverse mapping): min > avg > max required. Got min=${min}, avg=${avg}, max=${max}`);
+                    }
+                } else {
+                    // Normal mapping: min < avg < max (higher values = better)
+                    if (!(min < avg && avg < max)) {
+                        throw new Error(`For ${col}: min < avg < max required. Got min=${min}, avg=${avg}, max=${max}`);
+                    }
                 }
                 
                 mapping[cName] = {
                     type: 'numeric',
                     min,
                     avg,
-                    max
+                    max,
+                    reverse: isReverse
                 };
                 
                 // Add exponent if enabled
-                if (exponentsEnabled && exponents[col]) {
+                // BUT NOT for the result column - exponents are only for features
+                if (exponentsEnabled && exponents[col] && !isResultColumn) {
                     mapping[cName].exponent = exponents[col];
                     console.log(`🔍 Added exponent ${exponents[col]} to ${cName}`);
+                } else if (isResultColumn && exponentsEnabled) {
+                    console.log(`🔍 Skipping exponent for result column ${cName}`);
                 }
             } else {
                 // Categorical column - extract from sliders
@@ -292,9 +312,12 @@ const CellMappingUI = {
                 });
                 
                 // Add exponent if enabled (for categorical columns too)
-                if (exponentsEnabled && exponents[col]) {
+                // BUT NOT for the result column - exponents are only for features
+                if (exponentsEnabled && exponents[col] && !isResultColumn) {
                     mapping[cName].exponent = exponents[col];
                     console.log(`🔍 Added exponent ${exponents[col]} to ${cName}`);
+                } else if (isResultColumn && exponentsEnabled) {
+                    console.log(`🔍 Skipping exponent for result column ${cName}`);
                 }
             }
         });
